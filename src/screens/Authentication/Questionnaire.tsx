@@ -1,24 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   SafeAreaView,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Animated,
   Dimensions,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 
 type Answer = string | string[] | null;
 
 interface Answers {
   [key: number]: Answer;
 }
-
 
 const questions = [
   {
@@ -37,9 +33,8 @@ const questions = [
     type: 'single',
     options: ['Left', 'Right', 'Both', 'No'],
   },
-
   {
-    id: 4,
+    id: 3,
     screen: 1,
     text: 'Have you experienced ear pain within the last 6 months?',
     sinhala: 'පසුගිය මාස 6 තුළ ඔබට කන් වේදනාවක් ඇති වී ඇත්ද?',
@@ -47,7 +42,7 @@ const questions = [
     options: ['Yes', 'No'],
   },
   {
-    id: 5,
+    id: 4,
     screen: 1,
     text: 'Are you regularly exposed to loud noise at work or daily life?',
     sinhala: 'ඔබ නිරතුරු සේවා ස්ථානයේ හෝ දෛනික ජීවිතයේ ශබ්ද දූෂණයට ලක් වෙනවාද?',
@@ -55,7 +50,7 @@ const questions = [
     options: ['Yes', 'No'],
   },
   {
-    id: 6,
+    id: 5,
     screen: 2,
     text: 'If yes, what is the main source of noise exposure?',
     sinhala: 'ඔව් නම්, ශබ්ද නිරාවරණයේ ප්‍රධාන ප්‍රභවය කුමක්ද?',
@@ -67,10 +62,10 @@ const questions = [
       'Firearms / Explosives',
       'Other',
     ],
-    conditionalOn: { questionId: 5, answer: 'Yes' },
+    conditionalOn: { questionId: 4, answer: 'Yes' },
   },
   {
-    id: 7,
+    id: 6,
     screen: 2,
     text: 'Do you regularly use ear protection in noisy environments?',
     sinhala: 'ශබ්දකාර පරිසරවලදී ඔබ නිරතුරු කන් ආරක්ෂක භාවිතා කරනවාද?',
@@ -78,7 +73,7 @@ const questions = [
     options: ['Always', 'Sometimes', 'Never'],
   },
   {
-    id: 8,
+    id: 7,
     screen: 2,
     text: 'How long have you been exposed to loud noise?',
     sinhala: 'ඔබ කොපමණ කාලයක් සිට ශබ්ද දූෂණයට ලක් වන්නේද?',
@@ -86,7 +81,7 @@ const questions = [
     options: ['Less than 1 Year', '1–5 years', '5–10 years', 'More than 10 years'],
   },
   {
-    id: 9,
+    id: 8,
     screen: 2,
     text: 'Have you undergone a hearing test before?',
     sinhala: 'ඔබ ඊට පෙර ශ්‍රවණ පරීක්ෂාවකට භාජනය වී තිබේද?',
@@ -94,7 +89,7 @@ const questions = [
     options: ['Yes', 'No'],
   },
   {
-    id: 13,
+    id: 9,
     screen: 3,
     text: 'Do you have a family history of hearing loss?',
     sinhala: 'ඔබේ පවුලේ ශ්‍රවණ බාධිත පසුබිමක් ඇත්ද?',
@@ -102,8 +97,6 @@ const questions = [
     options: ['Yes', 'No'],
   },
 ];
-
-const TOTAL_SCREENS = 3;
 
 interface CheckboxOptionProps {
   label: string;
@@ -113,11 +106,30 @@ interface CheckboxOptionProps {
 
 const CheckboxOption: React.FC<CheckboxOptionProps> = ({ label, checked, onPress }) => {
   return (
-    <TouchableOpacity style={styles.checkboxRow} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-        {checked && <Text style={styles.checkmark}>✓</Text>}
+    <TouchableOpacity 
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 16,
+        marginBottom: 4,
+      }} 
+      onPress={onPress} 
+      activeOpacity={0.7}
+    >
+      <View style={{
+        width: 20,
+        height: 20,
+        borderWidth: 2,
+        borderColor: checked ? '#0066B2' : '#9CA3AF',
+        borderRadius: 3,
+        backgroundColor: checked ? '#0066B2' : '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 6,
+      }}>
+        {checked && <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', lineHeight: 16 }}>✓</Text>}
       </View>
-      <Text style={styles.checkboxLabel}>{label}</Text>
+      <Text style={{ fontSize: 13, color: '#374151', fontWeight: '500' }}>{label}</Text>
     </TouchableOpacity>
   );
 };
@@ -133,13 +145,15 @@ const QuestionBlock: React.FC<QuestionBlockProps> = ({ index, question, answer, 
   const isHorizontal = question.options.length <= 4 && question.options.every(o => o.length <= 10);
 
   return (
-    <View style={styles.questionBlock}>
-      <Text style={styles.questionText}>
+    <View style={{ marginBottom: 24 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', lineHeight: 20, marginBottom: 3 }}>
         {index}. {question.text}
       </Text>
-      <Text style={styles.sinhalaText}>{question.sinhala}</Text>
+      <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 18, fontStyle: 'italic', marginBottom: 10 }}>
+        {question.sinhala}
+      </Text>
 
-      <View style={isHorizontal ? styles.optionsRow : styles.optionsColumn}>
+      <View style={isHorizontal ? { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } : { flexDirection: 'column', gap: 6 }}>
         {question.options.map(option => (
           <CheckboxOption
             key={option}
@@ -161,42 +175,47 @@ const Questionnaire: React.FC<any> = ({ navigation }) => {
   };
 
   const handleSubmit = () => {
-    // Final submission
     console.log('Questionnaire complete:', answers);
-    navigation.navigate('Terms'); // Navigate to Terms screen
+    navigation.navigate('Terms');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 40}}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: '#333', marginBottom: 24, textAlign: 'center' }}>Medical History</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 40 }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: '#333', marginBottom: 15, textAlign: 'center' }}>
+          Medical History
+        </Text>
       </View>
 
-      {/* Questions */}
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
       >
         {questions.map((q, i) => (
           <QuestionBlock
             key={q.id}
-            index={i + 1} // Simply use i + 1 for numbering
+            index={i + 1}
             question={q}
             answer={answers[q.id] ?? null}
             onSelect={handleSelect}
           />
         ))}
 
-        {/* Spacer so button doesn't overlap last question */}
         <View style={{ height: 100 }} />
 
-        {/* Submit Button */}
-        <View style={styles.footer}>
-          {/* Next Button */}
+        <View style={{ 
+          position: 'absolute', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          backgroundColor: '#FFFFFF', 
+          paddingHorizontal: 20, 
+          paddingBottom: 28, 
+          paddingTop: 12 
+        }}>
           <TouchableOpacity
-            onPress={handleSubmit} // Add this line
+            onPress={handleSubmit}
             style={{ 
               backgroundColor: '#0066B2', 
               borderRadius: 20, 
@@ -212,7 +231,6 @@ const Questionnaire: React.FC<any> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Sign In Link */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 32 }}>
           <Text style={{ fontSize: 14, color: '#666' }}>Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
@@ -220,134 +238,8 @@ const Questionnaire: React.FC<any> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
-    minHeight: 44,
-    justifyContent: 'center', // Center the title
-  },
-  screenTitle: { // Renamed from screenTitleCentered
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-
-  // Scroll
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-
-  // Question block
-  questionBlock: {
-    marginBottom: 24,
-  },
-  questionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    lineHeight: 20,
-    marginBottom: 3,
-  },
-  sinhalaText: {
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 18,
-    fontStyle: 'italic',
-    marginBottom: 10,
-  },
-
-  // Options
-  optionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionsColumn: {
-    flexDirection: 'column',
-    gap: 6,
-  },
-
-  // Checkbox
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-    marginBottom: 4,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#9CA3AF',
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 6,
-  },
-  checkboxChecked: {
-    backgroundColor: '#1D4ED8',
-    borderColor: '#1D4ED8',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 16,
-  },
-  checkboxLabel: {
-    fontSize: 13,
-    color: '#374151',
-    fontWeight: '500',
-  },
-
-  // Footer / Continue
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingBottom: 28,
-    paddingTop: 12,
-  },
-  continueButton: {
-    backgroundColor: '#1D4ED8',
-    borderRadius: 30,
-    paddingVertical: 16,
-    alignItems: 'center',
-    shadowColor: '#1D4ED8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  continueText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-});
 
 export default Questionnaire;
