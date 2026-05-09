@@ -167,8 +167,9 @@ const QuestionBlock: React.FC<QuestionBlockProps> = ({ index, question, answer, 
   );
 };
 
-const Questionnaire: React.FC<any> = ({ navigation }) => {
+const Questionnaire: React.FC<any> = ({ navigation, route }) => {
   const [answers, setAnswers] = useState<Answers>({});
+  const { signupData } = route.params || {};
 
   const handleSelect = (questionId: number, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -176,7 +177,10 @@ const Questionnaire: React.FC<any> = ({ navigation }) => {
 
   const handleSubmit = () => {
     console.log('Questionnaire complete:', answers);
-    navigation.navigate('Terms');
+    navigation.navigate('Terms', { 
+      signupData, 
+      questionnaireData: answers 
+    });
   };
 
   return (

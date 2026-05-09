@@ -6,7 +6,7 @@ import Alert from '../../components/Alert';
 // Firebase imports
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { app } from '../../configs/FirebaseConfig';
+import { app } from '../../../configs/FirebaseConfig';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -107,8 +107,8 @@ const SignUpScreen = ({ navigation }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Save all form data to Firestore 'Auth' collection using uid as document ID
-      await setDoc(doc(db, 'Auth', user.uid), {
+      // 2. Prepare data for the next steps (do not save to Firestore yet)
+      const signupData = {
         uid: user.uid,
         name,
         mobile,
@@ -117,11 +117,10 @@ const SignUpScreen = ({ navigation }) => {
         gender,
         jobRole,
         workPlace,
-        createdAt: new Date().toISOString(),
-      });
+      };
 
-      console.log('User registered and data saved:', user.uid);
-      navigation.navigate('Questionnaire');
+      console.log('User authenticated:', user.uid);
+      navigation.navigate('Questionnaire', { signupData });
 
     } catch (error) {
       console.error('Sign up error:', error);

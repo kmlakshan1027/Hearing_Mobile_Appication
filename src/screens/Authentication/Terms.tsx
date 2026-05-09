@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, setDoc } from 'firebase/firestore';
 import { app } from '../../../configs/FirebaseConfig';
 
 interface TermsProps {
@@ -19,6 +19,7 @@ interface TermsProps {
 
 const Terms: React.FC<TermsProps> = ({ onBack, onAgree }) => {
   const navigation = useNavigation<StackNavigationProp<any>>();
+  const route = useRoute<any>();
   const [agreed, setAgreed] = useState(false);
   const [termsContent, setTermsContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -46,11 +47,35 @@ const Terms: React.FC<TermsProps> = ({ onBack, onAgree }) => {
     fetchTerms();
   }, []);
 
-  const handleAgree = () => {
-    if (onAgree) {
-      onAgree();
-    } else {
-      navigation.navigate('Home');
+  const handleAgree = async () => {
+    if (!agreed || loading) return;
+
+    setLoading(true);
+    try {
+      const { signupData, questionnaireData } = route.params || {};
+      
+      if (signupData && signupData.uid) {
+        const db = getFirestore(app);
+        // Save all gathered data to the 'Auth' collection
+        await setDoc(doc(db, 'Auth', signupData.uid), {
+          ...signupData,
+          medicalHistory: questionnaireData,
+          agreedToTerms: true,
+          createdAt: new Date().toISOString(),
+        });
+        console.log('Final data saved for user:', signupData.uid);
+      }
+
+      if (onAgree) {
+        onAgree();
+      } else {
+        navigation.navigate('Home');
+      }
+    } catch (error) {
+      console.error('Error completing registration:', error);
+      // You might want to show an alert here if data saving fails
+    } finally {
+      setLoading(false);
     }
   };
 
