@@ -34,7 +34,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F6FB' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <StatusBar barStyle="light-content" backgroundColor="#1A3C6E" />
 
       {/* Header */}
@@ -174,7 +174,7 @@ const HomeScreen = ({ navigation }) => {
             shadowRadius: 10,
             elevation: 8,
           }}
-          onPress={() => navigation.navigate('Test')}
+          onPress={() => navigation.navigate('Process')}
           activeOpacity={0.85}
         >
           <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: 0.8 }}>START HEARING TEST</Text>
