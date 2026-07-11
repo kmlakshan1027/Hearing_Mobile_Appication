@@ -107,7 +107,6 @@ const SignUpScreen = ({ navigation }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Prepare data for the next steps (do not save to Firestore yet)
       const signupData = {
         uid: user.uid,
         name,
@@ -119,7 +118,19 @@ const SignUpScreen = ({ navigation }) => {
         workPlace,
       };
 
-      console.log('User authenticated:', user.uid);
+      // 2. Immediately write a PARTIAL Firestore document, marked as not yet
+      //    agreed to Terms. This guarantees the user's own document exists
+      //    from the moment their Auth account is created — so if they close
+      //    the app before finishing Questionnaire/Terms, Sign In can detect
+      //    the incomplete registration and route them back to finish it,
+      //    without losing their already-entered details.
+      await setDoc(doc(db, 'Auth', user.uid), {
+        ...signupData,
+        agreedToTerms: false,
+        createdAt: new Date().toISOString(),
+      });
+
+      console.log('User authenticated and partial profile saved:', user.uid);
       navigation.navigate('Questionnaire', { signupData });
 
     } catch (error) {
