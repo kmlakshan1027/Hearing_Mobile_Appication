@@ -1,4 +1,4 @@
-//Questionnaire.tsx
+// Questionnaire.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -17,7 +17,10 @@ interface Answers {
   [key: number]: Answer;
 }
 
-const questions = [
+// Exported so other screens (e.g. Generate.jsx, when building the report's
+// Medical History Summary) can reuse the exact same question text/IDs
+// instead of duplicating them.
+export const questions = [
   {
     id: 1,
     screen: 1,

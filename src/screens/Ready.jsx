@@ -50,10 +50,16 @@ const INSTRUCTIONS = [
   },
 ];
 
-const EAR_OPTIONS = ['Left Ear', 'Right Ear', 'Both Ears'];
-
 const ReadyScreen = ({ navigation }) => {
-  const [selectedEar, setSelectedEar] = useState('Both Ears');
+  // Track which steps have been checked off by the user
+  const [checkedSteps, setCheckedSteps] = useState({});
+
+  const allChecked = INSTRUCTIONS.every((item) => checkedSteps[item.step]);
+  const checkedCount = INSTRUCTIONS.filter((item) => checkedSteps[item.step]).length;
+
+  const toggleStep = (step) => {
+    setCheckedSteps((prev) => ({ ...prev, [step]: !prev[step] }));
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -63,38 +69,36 @@ const ReadyScreen = ({ navigation }) => {
       <View style={{
         backgroundColor: '#1A3C6E',
         paddingTop: 50,
-        paddingBottom: 24,
+        paddingBottom: 28,
         paddingHorizontal: 20,
+        alignItems: 'center',
       }}>
-        {/* Back row */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 18 }}
-        >
-          <Text style={{ color: '#A8C4E0', fontSize: 18 }}>‹</Text>
-          <Text style={{ color: '#A8C4E0', fontSize: 13, fontWeight: '500' }}>Dashboard</Text>
-        </TouchableOpacity>
-
-        {/* Title block */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{
-            width: 48, height: 48, borderRadius: 24,
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            alignItems: 'center', justifyContent: 'center',
-            borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.25)',
-          }}>
-            <Text style={{ fontSize: 22 }}>📋</Text>
-          </View>
-          <View>
-            <Text style={{ color: '#A8C4E0', fontSize: 12, fontWeight: '500', letterSpacing: 0.4 }}>
-              BEFORE YOU BEGIN
-            </Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '800', marginTop: 2 }}>
-              Get Ready
-            </Text>
-          </View>
-        </View>
+        <Text style={{
+          color: '#A8C4E0',
+          fontSize: 12,
+          fontWeight: '600',
+          letterSpacing: 1.2,
+          textAlign: 'center',
+        }}>
+          BEFORE YOU BEGIN
+        </Text>
+        <Text style={{
+          color: '#FFFFFF',
+          fontSize: 24,
+          fontWeight: '800',
+          marginTop: 4,
+          textAlign: 'center',
+          letterSpacing: 0.2,
+        }}>
+          Get Ready
+        </Text>
+        <View style={{
+          width: 40,
+          height: 3,
+          borderRadius: 2,
+          backgroundColor: 'rgba(255,255,255,0.35)',
+          marginTop: 12,
+        }} />
       </View>
 
       {/* ── Body ── */}
@@ -106,9 +110,14 @@ const ReadyScreen = ({ navigation }) => {
 
         {/* ── Instructions ── */}
         <View style={{ gap: 10 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', letterSpacing: 0.1 }}>
-            Follow These Steps
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', letterSpacing: 0.1 }}>
+              Follow These Steps
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: allChecked ? '#16A34A' : '#94A3B8' }}>
+              {checkedCount}/{INSTRUCTIONS.length} completed
+            </Text>
+          </View>
 
           <View style={{
             backgroundColor: '#FFFFFF',
@@ -120,7 +129,11 @@ const ReadyScreen = ({ navigation }) => {
           }}>
             {INSTRUCTIONS.map((item, index) => (
               <View key={item.step}>
-                <InstructionRow item={item} />
+                <InstructionRow
+                  item={item}
+                  checked={!!checkedSteps[item.step]}
+                  onToggle={() => toggleStep(item.step)}
+                />
                 {index < INSTRUCTIONS.length - 1 && (
                   <View style={{ height: 1, backgroundColor: '#F1F5F9', marginLeft: 70 }} />
                 )}
@@ -143,9 +156,9 @@ const ReadyScreen = ({ navigation }) => {
             </Text>
             <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18 }}>
               The mobile app does not control the hearing test. The external device generates
-              all frequencies automatically. Tap{' '}
-              <Text style={{ fontWeight: '700' }}>Calculate</Text>{' '}
-              only after your hardware is powered on and you are ready.
+              all frequencies automatically. Check off each step above, then tap{' '}
+              <Text style={{ fontWeight: '700' }}>Next</Text>{' '}
+              once your hardware is powered on and you are ready.
             </Text>
           </View>
         </View>
@@ -176,22 +189,27 @@ const ReadyScreen = ({ navigation }) => {
           <Text style={{ color: '#475569', fontSize: 16, fontWeight: '700' }}>Back</Text>
         </TouchableOpacity>
 
-        {/* Start */}
+        {/* Start — only enabled once every step is checked off */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('Progress')}
-          activeOpacity={0.85}
+          onPress={() => allChecked && navigation.navigate('Progress')}
+          activeOpacity={allChecked ? 0.85 : 1}
+          disabled={!allChecked}
           style={{
             flex: 2,
             borderRadius: 14, paddingVertical: 16,
             alignItems: 'center',
-            backgroundColor: '#1A3C6E',
-            shadowColor: '#1A3C6E',
+            backgroundColor: allChecked ? '#1A3C6E' : '#CBD5E1',
+            shadowColor: allChecked ? '#1A3C6E' : 'transparent',
             shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.35, shadowRadius: 10, elevation: 8,
+            shadowOpacity: allChecked ? 0.35 : 0,
+            shadowRadius: 10, elevation: allChecked ? 8 : 0,
           }}
         >
-          <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: 0.8 }}>
-            Calculate
+          <Text style={{
+            color: allChecked ? '#FFFFFF' : '#64748B',
+            fontSize: 17, fontWeight: '700', letterSpacing: 0.8,
+          }}>
+            Next
           </Text>
         </TouchableOpacity>
       </View>
@@ -202,15 +220,21 @@ const ReadyScreen = ({ navigation }) => {
 
 /* ─────────────────────────── Sub-component ─────────────────────────── */
 
-const InstructionRow = ({ item }) => (
-  <View style={{
-    flexDirection: 'row', alignItems: 'flex-start',
-    paddingHorizontal: 16, paddingVertical: 14, gap: 14,
-  }}>
+const InstructionRow = ({ item, checked, onToggle }) => (
+  <TouchableOpacity
+    onPress={onToggle}
+    activeOpacity={0.7}
+    style={{
+      flexDirection: 'row', alignItems: 'flex-start',
+      paddingHorizontal: 16, paddingVertical: 14, gap: 14,
+    }}
+  >
     {/* Step icon bubble */}
     <View style={{
       width: 42, height: 42, borderRadius: 21,
-      backgroundColor: '#EEF2FF',
+      backgroundColor: checked ? '#EEF2FF' : '#F8FAFC',
+      borderWidth: 1,
+      borderColor: checked ? '#C7D2FE' : '#E2E8F0',
       alignItems: 'center', justifyContent: 'center',
       flexShrink: 0,
     }}>
@@ -226,7 +250,10 @@ const InstructionRow = ({ item }) => (
         }}>
           {item.step}
         </Text>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B' }}>
+        <Text style={{
+          fontSize: 14, fontWeight: '700',
+          color: checked ? '#1E293B' : '#1E293B',
+        }}>
           {item.title}
         </Text>
       </View>
@@ -234,7 +261,22 @@ const InstructionRow = ({ item }) => (
         {item.description}
       </Text>
     </View>
-  </View>
+
+    {/* Checkbox */}
+    <View style={{
+      width: 24, height: 24, borderRadius: 7,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: checked ? '#1A3C6E' : '#FFFFFF',
+      borderWidth: 1.5,
+      borderColor: checked ? '#1A3C6E' : '#CBD5E1',
+      marginTop: 2,
+      flexShrink: 0,
+    }}>
+      {checked && (
+        <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800' }}>✓</Text>
+      )}
+    </View>
+  </TouchableOpacity>
 );
 
 export default ReadyScreen;

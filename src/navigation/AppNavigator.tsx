@@ -8,7 +8,9 @@ import ProcessScreen from '../screens/Ready';
 import PrograssScreen from '../screens/Prograss';
 import GenerateScreen from '../screens/Generate';
 import Questionnaire from '../screens/Authentication/Questionnaire';
+import Results from '../screens/Results';
 import Terms from '../screens/Authentication/Terms';
+import ResultsScreen from '../screens/Results';
 
 const Stack = createStackNavigator();
 
@@ -21,6 +23,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Ready" component={ProcessScreen} />
       <Stack.Screen name="Progress" component={PrograssScreen} />
       <Stack.Screen name="Generate" component={GenerateScreen} />
+      <Stack.Screen name="Results" component={ResultsScreen} />
       <Stack.Screen name="Questionnaire" component={Questionnaire} />
       <Stack.Screen name="Terms" component={Terms} />
     </Stack.Navigator>
