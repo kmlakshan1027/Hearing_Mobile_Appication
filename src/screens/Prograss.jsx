@@ -1,4 +1,4 @@
-// Progress.jsx  –  Screen 3: Progress Screen
+// Progress.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Animated, Easing,
@@ -10,8 +10,7 @@ import {
   getFirestore, collection, query, where, getDocs,
   updateDoc, arrayUnion, increment,
 } from 'firebase/firestore';
-import { app, database } from '../../configs/FirebaseConfig'; // adjust path to match your project structure
-
+import { app, database } from '../../configs/FirebaseConfig';
 const HEARING_TEST_PATH = 'hearing_test';
 
 const ProgressScreen = ({ navigation }) => {
@@ -220,31 +219,17 @@ const ProgressScreen = ({ navigation }) => {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <StatusBar barStyle="light-content" backgroundColor="#1A3C6E" />
 
-      {/* ── Header ── */}
+      {/* ── Header — matches Questionnaire.tsx's header style ── */}
       <View style={{
         backgroundColor: '#1A3C6E',
-        paddingTop: 50,
-        paddingBottom: 24,
-        paddingHorizontal: 20,
+        paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.08)',
       }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{
-            width: 48, height: 48, borderRadius: 24,
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            alignItems: 'center', justifyContent: 'center',
-            borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.25)',
-          }}>
-            <Text style={{ fontSize: 22 }}>🎧</Text>
-          </View>
-          <View>
-            <Text style={{ color: '#A8C4E0', fontSize: 12, fontWeight: '500', letterSpacing: 0.4 }}>
-              TEST IN PROGRESS
-            </Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '800', marginTop: 2 }}>
-              Hearing Test
-            </Text>
-          </View>
-        </View>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' }}>
+          Hearing Test in Progress
+        </Text>
       </View>
 
       {/* ── Body ── */}
@@ -280,9 +265,6 @@ const ProgressScreen = ({ navigation }) => {
 
         {/* ── Status Text ── */}
         <View style={{ alignItems: 'center', gap: 8 }}>
-          <Text style={{ fontSize: 19, fontWeight: '800', color: '#1E293B', textAlign: 'center' }}>
-            Hearing Test in Progress
-          </Text>
           <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 19 }}>
             Waiting for test results{dots}
           </Text>

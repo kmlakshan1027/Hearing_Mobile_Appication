@@ -1,4 +1,4 @@
-// Questionnaire.tsx
+//Questionnaire.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -7,7 +7,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { app } from '../../../configs/FirebaseConfig'; // adjust path to match your project structure
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -17,9 +22,8 @@ interface Answers {
   [key: number]: Answer;
 }
 
-// Exported so other screens (e.g. Generate.jsx, when building the report's
-// Medical History Summary) can reuse the exact same question text/IDs
-// instead of duplicating them.
+// Exported so other screens (e.g. Generate.jsx, Profile.jsx) can reuse the
+// exact same question text/IDs instead of duplicating them.
 export const questions = [
   {
     id: 1,
@@ -124,9 +128,9 @@ const CheckboxOption: React.FC<CheckboxOptionProps> = ({ label, checked, onPress
         width: 20,
         height: 20,
         borderWidth: 2,
-        borderColor: checked ? '#0066B2' : '#9CA3AF',
+        borderColor: checked ? '#1A3C6E' : '#9CA3AF',
         borderRadius: 3,
-        backgroundColor: checked ? '#0066B2' : '#FFFFFF',
+        backgroundColor: checked ? '#1A3C6E' : '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 6,
@@ -172,13 +176,15 @@ const QuestionBlock: React.FC<QuestionBlockProps> = ({ index, question, answer, 
 };
 
 const Questionnaire: React.FC<any> = ({ navigation, route }) => {
-  const [answers, setAnswers] = useState<Answers>({});
-  const { signupData } = route.params || {};
+  const { signupData, editMode, initialAnswers, uid } = route.params || {};
+  const [answers, setAnswers] = useState<Answers>(initialAnswers || {});
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSelect = (questionId: number, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
+  // ── Registration flow: move on to Terms & Conditions ──
   const handleSubmit = () => {
     console.log('Questionnaire complete:', answers);
     navigation.navigate('Terms', { 
@@ -187,13 +193,46 @@ const Questionnaire: React.FC<any> = ({ navigation, route }) => {
     });
   };
 
+  // ── Edit-from-Profile flow: save directly to Firestore, no Terms step ──
+  const handleSaveEdit = async () => {
+    const targetUid = uid || getAuth(app).currentUser?.uid;
+    if (!targetUid) {
+      Alert.alert('Error', 'No signed-in user found.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const db = getFirestore(app);
+      await updateDoc(doc(db, 'Auth', targetUid), {
+        medicalHistory: answers,
+        // Marks WHEN the medical history last changed, independent of test
+        // dates — the Dashboard compares this against the latest report's
+        // date to decide whether to prompt the user to retake a test.
+        medicalHistoryUpdatedAt: new Date().toISOString(),
+      });
+      navigation.goBack();
+    } catch (err) {
+      console.error('Failed to save medical history:', err);
+      Alert.alert('Update Failed', 'Could not save your changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <View style={{ paddingHorizontal: 20, paddingTop: 40 }}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: '#333', marginBottom: 15, textAlign: 'center' }}>
-          Medical History
+            {/* ── Header ── */}
+            <View style={{
+              backgroundColor: '#1A3C6E',
+              paddingTop: 60, paddingHorizontal: 20,
+              alignItems: 'center',
+              borderBottomWidth: 1,
+              borderBottomColor: 'rgba(255,255,255,0.08)',
+            }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: '#ffffff', marginBottom: 15, textAlign: 'center' }}>
+          {editMode ? 'Edit Medical History' : 'Medical History'}
         </Text>
-      </View>
+        </View>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -222,29 +261,54 @@ const Questionnaire: React.FC<any> = ({ navigation, route }) => {
           paddingBottom: 28, 
           paddingTop: 12 
         }}>
+          {editMode && (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              disabled={isSaving}
+              style={{
+                borderRadius: 20,
+                paddingVertical: 12,
+                alignItems: 'center',
+                marginBottom: 10,
+                borderWidth: 1.5,
+                borderColor: '#CBD5E1',
+              }}
+            >
+              <Text style={{ color: '#475569', fontSize: 15, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
-            onPress={handleSubmit}
+            onPress={editMode ? handleSaveEdit : handleSubmit}
+            disabled={isSaving}
             style={{ 
-              backgroundColor: '#0066B2', 
+              backgroundColor: '#1A3C6E', 
               borderRadius: 20, 
               paddingVertical: 12, 
               alignItems: 'center', 
               marginTop: 2,
-              marginBottom: 30 
+              marginBottom: 30,
+              opacity: isSaving ? 0.7 : 1,
             }}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '600' }}>
-              Next
-            </Text>
+            {isSaving ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '600' }}>
+                {editMode ? 'Save Changes' : 'Next'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 32 }}>
-          <Text style={{ fontSize: 14, color: '#666' }}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-            <Text style={{ fontSize: 14, color: '#0066B2', fontWeight: '600' }}>Sign in</Text>
-          </TouchableOpacity>
-        </View>
+        {!editMode && (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 32 }}>
+            <Text style={{ fontSize: 14, color: '#666' }}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
+              <Text style={{ fontSize: 14, color: '#1A3C6E', fontWeight: '600' }}>Sign in</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

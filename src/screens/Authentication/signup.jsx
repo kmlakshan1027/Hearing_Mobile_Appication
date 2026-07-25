@@ -7,11 +7,13 @@ import Alert from '../../components/Alert';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { app } from '../../../configs/FirebaseConfig';
+import { generateEmployeeId } from '../../utils/generateEmployeeId';
+import { normalizeUsername, validateUsername, usernameToAuthEmail } from '../../utils/authUsername';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const InputField = ({ label, subLabel, placeholder, value, onChange, secureTextEntry = false, keyboardType = 'default' }) => (
+const InputField = ({ label, subLabel, placeholder, value, onChange, secureTextEntry = false, keyboardType = 'default', note, autoCapitalize = 'sentences' }) => (
   <View style={{ marginBottom: 24 }}>
     <Text style={{ fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 2 }}>{label}</Text>
     <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>{subLabel}</Text>
@@ -22,8 +24,16 @@ const InputField = ({ label, subLabel, placeholder, value, onChange, secureTextE
       onChangeText={onChange}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
+      autoCapitalize={autoCapitalize}
+      autoCorrect={false}
       placeholderTextColor="#999"
     />
+    {note && (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 }}>
+        <Text style={{ fontSize: 11 }}>🔒</Text>
+        <Text style={{ fontSize: 11, color: '#94A3B8', flex: 1 }}>{note}</Text>
+      </View>
+    )}
   </View>
 );
 
@@ -59,7 +69,7 @@ const SignUpScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
-    email: '',
+    username: '',
     ageCategory: '',
     gender: '',
     jobRole: '',
@@ -82,11 +92,17 @@ const SignUpScreen = ({ navigation }) => {
   };
 
   const handleSignUp = async () => {
-    const { name, mobile, email, ageCategory, gender, jobRole, workPlace, password, confirmPassword } = formData;
+    const { name, mobile, username, ageCategory, gender, jobRole, workPlace, password, confirmPassword } = formData;
 
     // Basic validation
-    if (!name || !mobile || !email || !ageCategory || !gender || !jobRole || !workPlace || !password || !confirmPassword) {
+    if (!name || !mobile || !username || !ageCategory || !gender || !jobRole || !workPlace || !password || !confirmPassword) {
       showAlertMessage('Please fill in all fields.');
+      return;
+    }
+
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      showAlertMessage(usernameError);
       return;
     }
 
@@ -103,22 +119,41 @@ const SignUpScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      // 1. Create user with Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const normalizedUsername = normalizeUsername(username);
+      // Firebase Auth needs an email-formatted identifier — derive one from
+      // the username. The user never sees or types this; it's purely how
+      // Firebase Auth (and existing Firestore queries elsewhere in the app
+      // that look up 'email') identify the account under the hood.
+      const authEmail = usernameToAuthEmail(normalizedUsername);
+
+      // 1. Create user with Firebase Auth. If this username is already taken,
+      //    Firebase throws 'auth/email-already-in-use' — same protection a
+      //    real email would get, for free.
+      const userCredential = await createUserWithEmailAndPassword(auth, authEmail, password);
       const user = userCredential.user;
+
+      // 2. Generate a short, human-friendly sequential ID (EM0001, EM0002, ...)
+      //    for display/reference purposes. Firestore's own document ID stays
+      //    as the Firebase Auth uid — that one is what Auth, security rules,
+      //    and the rest of the app (e.g. Questionnaire edit mode) rely on.
+      const employeeId = await generateEmployeeId(db);
 
       const signupData = {
         uid: user.uid,
+        employeeId,
         name,
         mobile,
-        email,
+        username: normalizedUsername,
+        email: authEmail, // internal synthetic identifier — kept so existing
+                           // Firestore queries elsewhere (matched by 'email')
+                           // continue to work unchanged
         ageCategory,
         gender,
         jobRole,
         workPlace,
       };
 
-      // 2. Immediately write a PARTIAL Firestore document, marked as not yet
+      // 3. Immediately write a PARTIAL Firestore document, marked as not yet
       //    agreed to Terms. This guarantees the user's own document exists
       //    from the moment their Auth account is created — so if they close
       //    the app before finishing Questionnaire/Terms, Sign In can detect
@@ -130,7 +165,7 @@ const SignUpScreen = ({ navigation }) => {
         createdAt: new Date().toISOString(),
       });
 
-      console.log('User authenticated and partial profile saved:', user.uid);
+      console.log('User authenticated and partial profile saved:', user.uid, employeeId);
       navigation.navigate('Questionnaire', { signupData });
 
     } catch (error) {
@@ -139,10 +174,10 @@ const SignUpScreen = ({ navigation }) => {
       // User-friendly error messages
       switch (error.code) {
         case 'auth/email-already-in-use':
-          showAlertMessage('This email is already registered. Please sign in.');
+          showAlertMessage('This username is already taken. Please choose another.');
           break;
         case 'auth/invalid-email':
-          showAlertMessage('Please enter a valid email address.');
+          showAlertMessage('Username contains characters that are not allowed. Use letters, numbers, underscores, or dots only.');
           break;
         case 'auth/weak-password':
           showAlertMessage('Password is too weak. Use at least 6 characters.');
@@ -162,9 +197,17 @@ const SignUpScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 40 }}>
-        <Text style={{ fontSize: 24, fontWeight: '600', color: '#333', marginBottom: 15, textAlign: 'center' }}>Create Account</Text>
+      {/* Header — matches Questionnaire.tsx's header style */}
+      <View style={{
+        backgroundColor: '#1A3C6E',
+        paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.08)',
+      }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' }}>
+          Create Account
+        </Text>
       </View>
 
       <ScrollView style={{ flex: 1 }}>
@@ -190,12 +233,13 @@ const SignUpScreen = ({ navigation }) => {
             />
 
             <InputField
-              label="Enter Your E-mail Address"
-              subLabel="ඔබගේ ඊ-මේල් ලිපිනය ඇතුලත් කරන්න."
-              placeholder="XXXXXX@gmail.com"
-              value={formData.email}
-              onChange={(val) => handleInputChange('email', val)}
-              keyboardType="email-address"
+              label="Choose a Username"
+              subLabel="පරිශීලක නාමයක් තෝරන්න. (අකුරු 6කට වඩා)"
+              placeholder="e.g. john_doe123"
+              value={formData.username}
+              onChange={(val) => handleInputChange('username', val)}
+              autoCapitalize="none"
+              note="Must be more than 5 characters and unique. This cannot be changed after registration — please choose carefully."
             />
 
             <SelectField
@@ -256,6 +300,7 @@ const SignUpScreen = ({ navigation }) => {
               value={formData.password}
               onChange={(val) => handleInputChange('password', val)}
               secureTextEntry={true}
+              note="Choose carefully — your password cannot be changed later from within the app."
             />
 
             <InputField
@@ -273,7 +318,7 @@ const SignUpScreen = ({ navigation }) => {
             onPress={handleSignUp}
             disabled={loading}
             style={{
-              backgroundColor: loading ? '#99C2E0' : '#0066B2',
+              backgroundColor: loading ? '#99C2E0' : '#1A3C6E',
               borderRadius: 20,
               paddingVertical: 12,
               alignItems: 'center',
@@ -292,7 +337,7 @@ const SignUpScreen = ({ navigation }) => {
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 32 }}>
             <Text style={{ fontSize: 14, color: '#666' }}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-              <Text style={{ fontSize: 14, color: '#0066B2', fontWeight: '600' }}>Sign in</Text>
+              <Text style={{ fontSize: 14, color: '#1A3C6E', fontWeight: '600' }}>Sign in</Text>
             </TouchableOpacity>
           </View>
 

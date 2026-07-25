@@ -34,7 +34,7 @@ const formatShortDate = (isoString) => {
 const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [userData, setUserData] = useState(null); // { name, reports, latestRiskStatus, lastReportDate, ... }
+  const [userData, setUserData] = useState(null); // { name, reports, latestRiskStatus, lastReportDate, medicalHistoryUpdatedAt, ... }
 
   // ── Live Firestore listener: signed-in user's own document, matched by email ──
   useEffect(() => {
@@ -84,6 +84,13 @@ const HomeScreen = ({ navigation }) => {
   const lastTestDateDisplay = lastTestDateRaw ? formatDate(lastTestDateRaw) : 'No tests yet';
   const riskClassification = userData?.latestRiskStatus || latestReport?.finalRisk?.classification || null;
   const riskStyle = getRiskStyle(riskClassification);
+
+  // Medical history was edited AFTER the most recent test (or no test exists yet) —
+  // the risk assessment on file may now be based on outdated answers.
+  const medicalHistoryUpdatedAt = userData?.medicalHistoryUpdatedAt || null;
+  const medicalHistoryIsStale =
+    !!medicalHistoryUpdatedAt &&
+    (!lastTestDateRaw || new Date(medicalHistoryUpdatedAt) > new Date(lastTestDateRaw));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -151,6 +158,41 @@ const HomeScreen = ({ navigation }) => {
             }}>
               <Text style={{ fontSize: 12, color: '#991B1B' }}>{errorMsg}</Text>
             </View>
+          )}
+
+          {/* ── Medical History Changed Notice ── */}
+          {medicalHistoryIsStale && (
+            <FadeInSection delay={0}>
+              <View style={{
+                backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14,
+                borderWidth: 1, borderColor: '#FDE68A',
+                flexDirection: 'row', gap: 12, alignItems: 'flex-start',
+              }}>
+                <Text style={{ fontSize: 20 }}>⚠️</Text>
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400E' }}>
+                    Medical History Updated
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#78350F', lineHeight: 17 }}>
+                    Your medical history has changed since your last test. Your current risk
+                    result may be outdated — we recommend taking a new hearing test.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('Ready')}
+                    activeOpacity={0.8}
+                    style={{
+                      alignSelf: 'flex-start', marginTop: 4,
+                      backgroundColor: '#F59E0B', borderRadius: 8,
+                      paddingVertical: 7, paddingHorizontal: 14,
+                    }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                      Take New Test
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </FadeInSection>
           )}
 
           {/* ── Hearing Health Score (hero card) ── */}
@@ -481,10 +523,6 @@ const HearingHealthScoreCard = ({ report, navigation }) => {
 
 /**
  * Test Summary chart — plain React Native Views, no charting/SVG library.
- * (Deliberately avoids react-native-svg / react-native-chart-kit: those are
- * native modules requiring linking + a native rebuild, same category of
- * issue you just hit with react-native-html-to-pdf. This has zero native
- * dependency risk.)
  * Shows the last 6 tests' Overall Hearing Performance Score, bar-colored by
  * that test's final risk classification.
  */

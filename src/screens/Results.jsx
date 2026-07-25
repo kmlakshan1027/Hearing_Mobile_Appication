@@ -130,46 +130,15 @@ const ResultsScreen = ({ navigation, route }) => {
       <View style={{
         backgroundColor: '#1A3C6E',
         paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.08)',
       }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Home')}
-            activeOpacity={0.7}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          >
-            <Text style={{ color: '#A8C4E0', fontSize: 18 }}>‹</Text>
-            <Text style={{ color: '#A8C4E0', fontSize: 13, fontWeight: '500' }}>Dashboard</Text>
-          </TouchableOpacity>
-
-          {/* Download PDF — quick-access icon button in the header */}
-          <TouchableOpacity
-            onPress={handleDownloadPdf}
-            disabled={isExporting}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)',
-              borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12,
-              opacity: isExporting ? 0.6 : 1,
-            }}
-          >
-            {isExporting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={{ fontSize: 14 }}>⬇️</Text>
-            )}
-            <Text style={{ color: '#FFFFFF', fontSize: 12.5, fontWeight: '700' }}>
-              {isExporting ? 'Preparing…' : 'Download PDF'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={{ color: '#A8C4E0', fontSize: 12, fontWeight: '500', letterSpacing: 0.4 }}>
+        <Text style={{ color: '#A8C4E0', fontSize: 12, fontWeight: '500', letterSpacing: 0.4, textAlign: 'center' }}>
           HEARING SCREENING REPORT
         </Text>
-        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '800', marginTop: 2 }}>
-          {reportId}
+        <Text style={{ color: '#FFFFFF', fontSize: 19, fontWeight: '700', letterSpacing: 0.3, marginTop: 4, textAlign: 'center' }}>
+          Report #{reportId}
         </Text>
       </View>
 
